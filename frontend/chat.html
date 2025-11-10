@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Triagem com IA</title>
+<link rel="stylesheet" href="chat.css">
+
+</head>
+<body>
+  <div class="chat-container">
+    <div class="chat-header">
+      <h2>Triagem com IA</h2>
+      <p>Responda às perguntas para avaliação inicial de saúde</p>
+    </div>
+
+    <div class="chat-box" id="chat-box">
+      <div class="message bot">
+        <p>👋 Olá! Sou sua assistente de triagem em IA. Como posso ajudar hoje?</p>
+      </div>
+    </div>
+
+    <div class="chat-input">
+      <input type="text" id="user-input" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter'){sendMessage();}">
+      <button onclick="sendMessage()">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    async function loadHistory() {
+  const chatBox = document.getElementById("chat-box");
+  try {
+    const response = await fetch("http://127.0.0.1:5000/history");
+    const data = await response.json();
+
+    data.forEach(msg => {
+      const cls = msg.autor === "Usuário" ? "user" : "bot";
+      chatBox.innerHTML += `<div class="message ${cls}"><p>${msg.mensagem}</p></div>`;
+    });
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+  } catch (err) {
+    console.error("Erro ao carregar histórico:", err);
+  }
+}
+
+
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chatBox = document.getElementById("chat-box");
+
+      // Exibe mensagem do usuário
+      chatBox.innerHTML += `<div class="message user"><p>${message}</p></div>`;
+      chatBox.scrollTop = chatBox.scrollHeight;
+      input.value = "";
+
+      try {
+        const response = await fetch("http://127.0.0.1:5000/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message })
+        });
+
+        if (!response.ok) throw new Error("Erro na resposta do servidor");
+
+        const data = await response.json();
+        const reply = data.reply || "Erro ao responder.";
+
+        // Exibe mensagem do bot
+        chatBox.innerHTML += `<div class="message bot"><p>${reply}</p></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+      } catch (err) {
+        chatBox.innerHTML += `<div class="message bot"><p>Erro ao conectar ao servidor.</p></div>`;
+        chatBox.scrollTop = chatBox.scrollHeight;
+        console.error(err);
+      }
+    }
+  </script>
+</body>
+</html>
